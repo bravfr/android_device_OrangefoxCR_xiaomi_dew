@@ -61,6 +61,27 @@ PRODUCT_PACKAGES += \
     android.hardware.health-service.mediatek \
     android.hardware.health-service.mediatek-recovery
 
+# Init
+PRODUCT_PACKAGES += \
+    fstab.mt6768 \
+    fstab.mt6768.vendor_ramdisk \
+    init_connectivity.rc \
+    init.connectivity.common.rc \
+    init.mi_thermald.rc \
+    init.modem.rc \
+    init.mt6768.power.rc \
+    init.mt6768.rc \
+    init.mt6768.usb.rc \
+    init.recovery.mt6768.rc \
+    init.mtkgki.rc \
+    init.project.rc \
+    init.sensor_1_0.rc \
+    ueventd.mt6768.rc
+
+PRODUCT_PACKAGES += \
+    init.insmod.sh \
+    init.insmod.mt6768.cfg
+
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += \
     $(DEVICE_PATH)
