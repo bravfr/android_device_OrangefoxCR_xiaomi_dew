@@ -16,7 +16,7 @@ jobs:
     - name: Descargar el Motor de Compilación de OrangeFox (Sync Sync)
       run: |
         mkdir ~/fox && cd ~/fox
-        git clone https://github.com -b master ~/fox/sync
+        git clone https://github.com ~/fox/sync
         cd ~/fox/sync
         ./orangefox_sync.sh --branch 14.0 --geometry minimal
 
