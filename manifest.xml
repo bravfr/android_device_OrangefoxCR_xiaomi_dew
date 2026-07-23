@@ -1,2 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <manifest version="5.0" type="device" target-level="7">
+
+    <project
+        name="mt6768-devs/android_device_xiaomi_dew-kernel"
+        path="device/xiaomi/dew-kernel"
+        revision="lineage-23.2" />
+
+    <project
+        name="mt6768-devs/android_vendor_xiaomi_dew"
+        path="vendor/xiaomi/dew"
+        revision="lineage-23.2" />
+
+    <project
+        name="mt6768-devs/android_hardware_mediatek"
+        path="hardware/mediatek"
+        revision="lineage-23.2" />
+
+    <project
+        name="mt6768-devs/android_hardware_xiaomi"
+        path="hardware/xiaomi"
+        revision="lineage-23.2" />
+
+    <project
+        name="mt6768-devs/android_device_mediatek_sepolicy_vndr"
+        path="device/mediatek/sepolicy_vndr"
+        revision="lineage-23.2" />
+
 </manifest>
