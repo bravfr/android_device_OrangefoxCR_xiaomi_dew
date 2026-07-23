@@ -1,0 +1,41 @@
+name: Compilador en la Nube de OrangeFox para Redmi 15C
+
+on:
+  workflow_dispatch: # Iniciar manualmente con un botón
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Configurar Entorno Operativo y Herramientas Linux
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev cpio
+
+    - name: Descargar el Motor de Compilación de OrangeFox (Sync Sync)
+      run: |
+        mkdir ~/fox && cd ~/fox
+        git clone https://gitlab.com -b master ~/fox/sync
+        cd ~/fox/sync
+        ./orangefox_sync.sh --branch 14.0 --geometry minimal
+
+    - name: Importar tu Árbol del Redmi 15C Modificado
+      uses: actions/checkout@v4
+      with:
+        path: ~/fox/fox_14.0/device/xiaomi/dew
+
+    - name: Iniciar Compilación del Archivo Executable (vendor_boot)
+      run: |
+        cd ~/fox/fox_14.0
+        export ALLOW_MISSING_DEPENDENCIES=true
+        export FOX_BUILD_DEVICE=dew
+        source build/envsetup.sh
+        lunch fox_dew-eng
+        make vendorbootimage -j$(nproc --all)
+
+    - name: Subir el OrangeFox Terminado para Descargar
+      uses: actions/upload-artifact@v4
+      with:
+        name: OrangeFox-Redmi-15C-Terminado
+        path: ~/fox/fox_14.0/out/target/product/dew/vendor_boot.img
