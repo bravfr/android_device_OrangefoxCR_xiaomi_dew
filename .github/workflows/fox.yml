@@ -1,59 +1,26 @@
-name: Build OrangeFox 14.1 - Redmi 15C
+name: Check dew dependencies
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Install dependencies
+      - name: Check available branches
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            bc bison build-essential ccache curl flex \
-            g++-multilib gcc-multilib git gnupg gperf \
-            lib32readline-dev lib32z1-dev liblz4-tool \
-            libncurses5-dev libsdl1.2-dev libssl-dev \
-            libxml2 libxml2-utils lzop pngcrush rsync \
-            schedtool squashfs-tools xsltproc zip zlib1g-dev \
-            cpio
+          echo "=== dew-kernel ==="
+          git ls-remote --heads https://github.com/mt6768-devs/android_device_xiaomi_dew-kernel.git
 
-      - name: Sync OrangeFox 14.1
-        run: |
-          mkdir -p "$HOME/fox"
-          cd "$HOME/fox"
+          echo "=== vendor_xiaomi_dew ==="
+          git ls-remote --heads https://github.com/mt6768-devs/android_vendor_xiaomi_dew.git
 
-          git clone https://gitlab.com/OrangeFox/sync.git sync
+          echo "=== hardware_mediatek ==="
+          git ls-remote --heads https://github.com/mt6768-devs/android_hardware_mediatek.git
 
-          cd sync
-          chmod +x orangefox_sync.sh
+          echo "=== hardware_xiaomi ==="
+          git ls-remote --heads https://github.com/mt6768-devs/android_hardware_xiaomi.git
 
-          ./orangefox_sync.sh \
-            --branch 14.1 \
-            --path "$HOME/fox/fox_14.1"
-
-      - name: Checkout device tree
-        uses: actions/checkout@v4
-        with:
-          path: device/xiaomi/dew
-
-      - name: Build OrangeFox
-        run: |
-          cd "$HOME/fox/fox_14.1"
-
-          export ALLOW_MISSING_DEPENDENCIES=true
-          export FOX_BUILD_DEVICE=dew
-
-          source build/envsetup.sh
-
-          lunch fox_dew-eng
-
-          mka vendorbootimage
-
-      - name: Upload vendor_boot.img
-        uses: actions/upload-artifact@v4
-        with:
-          name: OrangeFox-14.1-Redmi-15C-dew
-          path: ${{ env.HOME }}/fox/fox_14.1/out/target/product/dew/vendor_boot.img
+          echo "=== sepolicy_vndr ==="
+          git ls-remote --heads https://github.com/mt6768-devs/android_device_mediatek_sepolicy_vndr.git
