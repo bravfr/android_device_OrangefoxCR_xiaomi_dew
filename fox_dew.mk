@@ -11,6 +11,3 @@ PRODUCT_NAME := fox_dew
 PRODUCT_BRAND := Xiaomi
 PRODUCT_MODEL := Redmi 15C
 PRODUCT_MANUFACTURER := Xiaomi
-
-# Forzar compilación exclusiva en modo de 64 bits nativo
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.zygote=zygote64
