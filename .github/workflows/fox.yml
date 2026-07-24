@@ -60,8 +60,27 @@ jobs:
       - name: Initialize OrangeFox source
         run: |
           cd "$GITHUB_WORKSPACE"
-          git clone --depth=1 -b fox_14.1 https://gitlab.com/OrangeFox/bootable/Recovery.git fox
 
+          git clone --depth=1 \
+            https://gitlab.com/OrangeFox/sync.git \
+            sync
+
+          cd sync
+
+          ./orangefox_sync.sh
+
+          echo "===== WORKSPACE ====="
+          find "$GITHUB_WORKSPACE" \
+            -maxdepth 3 \
+            -type f \
+            -name "envsetup.sh" \
+            -print
+
+          echo "===== DIRECTORIES ====="
+          find "$GITHUB_WORKSPACE" \
+            -maxdepth 2 \
+            -type d \
+            -print
 
       # ============================================================
       # 4. Copiar device tree
