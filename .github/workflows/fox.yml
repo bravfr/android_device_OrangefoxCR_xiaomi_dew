@@ -48,8 +48,6 @@ jobs:
 
       - name: Initialize OrangeFox source
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/fox"
-
           cd "$GITHUB_WORKSPACE/fox"
 
           git clone --depth=1 \
@@ -59,6 +57,17 @@ jobs:
           cd sync
 
           ./orangefox_sync.sh
+
+      - name: Check OrangeFox source
+        run: |
+          echo "===== ROOT ====="
+          ls -la "$GITHUB_WORKSPACE"
+
+          echo "===== ENVSETUP ====="
+          find "$GITHUB_WORKSPACE" \
+            -maxdepth 4 \
+            -name "envsetup.sh" \
+            -print
 
       - name: Add device tree
         run: |
