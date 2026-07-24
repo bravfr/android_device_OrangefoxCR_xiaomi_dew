@@ -67,20 +67,15 @@ jobs:
 
           cd sync
 
-          ./orangefox_sync.sh
+          ./orangefox_sync.sh \
+            --branch 14.1 \
+            --path "$GITHUB_WORKSPACE/fox"
 
-          echo "===== WORKSPACE ====="
-          find "$GITHUB_WORKSPACE" \
-            -maxdepth 3 \
-            -type f \
-            -name "envsetup.sh" \
-            -print
+          echo "===== ORANGEFOX ROOT ====="
+          ls -la "$GITHUB_WORKSPACE/fox"
 
-          echo "===== DIRECTORIES ====="
-          find "$GITHUB_WORKSPACE" \
-            -maxdepth 2 \
-            -type d \
-            -print
+          echo "===== ENVSETUP ====="
+          ls -lh "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
 
       # ============================================================
       # 4. Copiar device tree
