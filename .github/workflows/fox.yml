@@ -161,7 +161,7 @@ jobs:
 
           source build/envsetup.sh
 
-          lunch fox_dew-trunk_staging-eng
+          lunch fox_dew-ap2a-eng
 
 
       # ============================================================
@@ -173,7 +173,7 @@ jobs:
 
           source build/envsetup.sh
 
-          lunch fox_dew-trunk_staging-eng
+          lunch fox_dew-ap2a-eng
 
           mka recoveryimage
 
