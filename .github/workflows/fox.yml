@@ -157,15 +157,11 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/fox"
 
-          echo "===== CURRENT DIRECTORY ====="
-          pwd
-
           echo "===== ENVSETUP ====="
-          ls -lh build/envsetup.sh
 
           source build/envsetup.sh
 
-          lunch fox_dew-eng
+          lunch fox_dew-trunk_staging-eng
 
 
       # ============================================================
@@ -177,7 +173,7 @@ jobs:
 
           source build/envsetup.sh
 
-          lunch fox_dew-eng
+          lunch fox_dew-trunk_staging-eng
 
           mka recoveryimage
 
