@@ -1,26 +1,149 @@
-name: Check dew dependencies
+name: Build OrangeFox Recovery
 
 on:
   workflow_dispatch:
 
 jobs:
-  check:
+  build:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Check available branches
+
+      - name: Checkout device tree
+        uses: actions/checkout@v4
+        with:
+          path: device/xiaomi/dew
+
+      - name: Install dependencies
         run: |
-          echo "=== dew-kernel ==="
-          git ls-remote --heads https://github.com/mt6768-devs/android_device_xiaomi_dew-kernel.git
+          sudo apt-get update
 
-          echo "=== vendor_xiaomi_dew ==="
-          git ls-remote --heads https://github.com/mt6768-devs/android_vendor_xiaomi_dew.git
+          sudo apt-get install -y \
+            git \
+            curl \
+            wget \
+            python3 \
+            python3-pip \
+            unzip \
+            zip \
+            bc \
+            bison \
+            flex \
+            build-essential \
+            gcc \
+            g++ \
+            make \
+            ninja-build \
+            ccache \
+            libssl-dev \
+            libelf-dev \
+            liblz4-tool \
+            lz4 \
+            rsync \
+            cpio \
+            kmod \
+            libxml2-utils \
+            xsltproc \
+            openjdk-11-jdk
 
-          echo "=== hardware_mediatek ==="
-          git ls-remote --heads https://github.com/mt6768-devs/android_hardware_mediatek.git
+      - name: Initialize OrangeFox source
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/fox"
 
-          echo "=== hardware_xiaomi ==="
-          git ls-remote --heads https://github.com/mt6768-devs/android_hardware_xiaomi.git
+          cd "$GITHUB_WORKSPACE/fox"
 
-          echo "=== sepolicy_vndr ==="
-          git ls-remote --heads https://github.com/mt6768-devs/android_device_mediatek_sepolicy_vndr.git
+          git clone --depth=1 \
+            https://gitlab.com/OrangeFox/sync.git \
+            -b fox_14.1 \
+            sync
+
+          cd sync
+
+          ./orangefox_sync.sh --branch 14.1
+
+      - name: Add device tree
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/fox/device/xiaomi"
+
+          cp -r \
+            "$GITHUB_WORKSPACE/device/xiaomi/dew" \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
+
+      - name: Clone dew kernel
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/fox/device/xiaomi"
+
+          git clone \
+            --depth=1 \
+            --branch lineage-23.2 \
+            https://github.com/mt6768-devs/android_device_xiaomi_dew-kernel.git \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel"
+
+      - name: Show kernel files
+        run: |
+          echo "===== KERNEL ====="
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
+
+          echo "===== DTB ====="
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
+
+          echo "===== MODULES ====="
+          find \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
+            -type f \
+            -name "*.ko" \
+            -print
+
+          echo "===== MODULE LOAD FILES ====="
+
+          find \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
+            -type f \
+            -name "modules.load*" \
+            -exec sh -c 'echo "===== $1 ====="; cat "$1"' _ {} \;
+
+      - name: Prepare build
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
+
+          source build/envsetup.sh
+
+          lunch fox_dew-eng
+
+      - name: Build OrangeFox
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
+
+          source build/envsetup.sh
+
+          lunch fox_dew-eng
+
+          mka recoveryimage
+
+      - name: Find output
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
+
+          echo "===== RECOVERY OUTPUT ====="
+
+          find out/target/product/dew \
+            -maxdepth 2 \
+            -type f \
+            \( \
+              -name "recovery.img" \
+              -o -name "vendor_boot.img" \
+              -o -name "boot.img" \
+            \) \
+            -exec ls -lh {} \;
+
+      - name: Upload OrangeFox
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrangeFox-dew
+          path: |
+            fox/out/target/product/dew/recovery.img
+            fox/out/target/product/dew/vendor_boot.img
+            fox/out/target/product/dew/boot.img
+          if-no-files-found: warn
