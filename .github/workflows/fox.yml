@@ -53,6 +53,18 @@ jobs:
             xsltproc \
             openjdk-11-jdk
 
+      - name: Install repo tool
+        run: |
+          mkdir -p "$HOME/bin"
+
+          curl https://storage.googleapis.com/git-repo-downloads/repo \
+            -o "$HOME/bin/repo"
+
+          chmod a+x "$HOME/bin/repo"
+
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+          repo --version
 
       # ============================================================
       # 3. Descargar OrangeFox
