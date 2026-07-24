@@ -54,12 +54,11 @@ jobs:
 
           git clone --depth=1 \
             https://gitlab.com/OrangeFox/sync.git \
-            -b fox_14.1 \
             sync
 
           cd sync
 
-          ./orangefox_sync.sh --branch 14.1
+          ./orangefox_sync.sh
 
       - name: Add device tree
         run: |
