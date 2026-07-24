@@ -48,7 +48,7 @@ jobs:
 
       - name: Initialize OrangeFox source
         run: |
-          cd "$GITHUB_WORKSPACE/fox"
+          cd "$GITHUB_WORKSPACE"
 
           git clone --depth=1 \
             https://gitlab.com/OrangeFox/sync.git \
