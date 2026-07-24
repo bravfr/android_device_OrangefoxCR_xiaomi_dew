@@ -149,6 +149,13 @@ jobs:
             -name "modules.load*" \
             -print
 
+      - name: Clone MediaTek sepolicy
+        run: |
+          git clone \
+            --depth=1 \
+            --branch lineage-23.2 \
+            https://github.com/mt6768-devs/android_device_mediatek_sepolicy_vndr.git \
+            "$GITHUB_WORKSPACE/fox/device/mediatek/sepolicy_vndr"
 
       # ============================================================
       # 7. Preparar compilación
