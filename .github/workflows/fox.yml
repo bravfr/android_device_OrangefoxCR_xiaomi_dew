@@ -9,11 +9,18 @@ jobs:
 
     steps:
 
+      # ============================================================
+      # 1. Descargar device tree
+      # ============================================================
       - name: Checkout device tree
         uses: actions/checkout@v4
         with:
           path: device/xiaomi/dew
 
+
+      # ============================================================
+      # 2. Instalar dependencias
+      # ============================================================
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -46,75 +53,112 @@ jobs:
             xsltproc \
             openjdk-11-jdk
 
+
+      # ============================================================
+      # 3. Descargar OrangeFox
+      # ============================================================
       - name: Initialize OrangeFox source
         run: |
           cd "$GITHUB_WORKSPACE"
 
-          git clone --depth=1 \
-            https://gitlab.com/OrangeFox/sync.git \
-            sync
+          mkdir -p fox
 
-          cd sync
+          git clone \
+            --depth=1 \
+            https://gitlab.com/OrangeFox/Recovery.git \
+            fox
 
-          ./orangefox_sync.sh
-
-      - name: Check OrangeFox source
-        run: |
-          echo "===== ROOT ====="
-          ls -la "$GITHUB_WORKSPACE"
+          echo "===== ORANGEFOX ROOT ====="
+          ls -la "$GITHUB_WORKSPACE/fox"
 
           echo "===== ENVSETUP ====="
-          find "$GITHUB_WORKSPACE" \
-            -maxdepth 4 \
-            -name "envsetup.sh" \
-            -print
+          ls -lh "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
 
+
+      # ============================================================
+      # 4. Copiar device tree
+      # ============================================================
+      - name: Add device tree
+        run: |
+          mkdir -p \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi"
+
+          cp -r \
+            "$GITHUB_WORKSPACE/device/xiaomi/dew" \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
+
+
+      # ============================================================
+      # 5. Descargar kernel precompilado
+      # ============================================================
       - name: Clone dew kernel
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/device/xiaomi"
-
           git clone \
             --depth=1 \
             --branch lineage-23.2 \
             https://github.com/mt6768-devs/android_device_xiaomi_dew-kernel.git \
-            "$GITHUB_WORKSPACE/device/xiaomi/dew-kernel"
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel"
 
-      - name: Show kernel files
+
+      # ============================================================
+      # 6. Verificar kernel
+      # ============================================================
+      - name: Verify kernel
         run: |
           echo "===== KERNEL ====="
-          ls -lh \
-            "$GITHUB_WORKSPACE/device/xiaomi/dew-kernel/images/kernel"
 
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
+
+          echo
           echo "===== DTB ====="
-          ls -lh \
-            "$GITHUB_WORKSPACE/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
 
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
+
+          echo
           echo "===== MODULES ====="
+
           find \
-            "$GITHUB_WORKSPACE/device/xiaomi/dew-kernel/modules" \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
             -type f \
             -name "*.ko" \
             -print
 
-          echo "===== MODULE LOAD FILES ====="
+          echo
+          echo "===== MODULES.LOAD ====="
 
           find \
-            "$GITHUB_WORKSPACE/device/xiaomi/dew-kernel/modules" \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
             -type f \
             -name "modules.load*" \
-            -exec sh -c 'echo "===== $1 ====="; cat "$1"' _ {} \;
+            -print
 
+
+      # ============================================================
+      # 7. Preparar compilación
+      # ============================================================
       - name: Prepare build
         run: |
-          cd "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE/fox"
+
+          echo "===== CURRENT DIRECTORY ====="
+          pwd
+
+          echo "===== ENVSETUP ====="
+          ls -lh build/envsetup.sh
 
           source build/envsetup.sh
 
           lunch fox_dew-eng
 
+
+      # ============================================================
+      # 8. Compilar OrangeFox
+      # ============================================================
       - name: Build OrangeFox
         run: |
-          cd "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE/fox"
 
           source build/envsetup.sh
 
@@ -122,28 +166,30 @@ jobs:
 
           mka recoveryimage
 
+
+      # ============================================================
+      # 9. Buscar resultados
+      # ============================================================
       - name: Find output
         run: |
-          cd "$GITHUB_WORKSPACE"
+          cd "$GITHUB_WORKSPACE/fox"
 
-          echo "===== RECOVERY OUTPUT ====="
+          echo "===== OUTPUT DIRECTORY ====="
 
           find out/target/product/dew \
             -maxdepth 2 \
             -type f \
-            \( \
-              -name "recovery.img" \
-              -o -name "vendor_boot.img" \
-              -o -name "boot.img" \
-            \) \
+            -name "*.img" \
             -exec ls -lh {} \;
 
+
+      # ============================================================
+      # 10. Subir imágenes
+      # ============================================================
       - name: Upload OrangeFox
         uses: actions/upload-artifact@v4
         with:
           name: OrangeFox-dew
           path: |
-            out/target/product/dew/recovery.img
-            out/target/product/dew/vendor_boot.img
-            out/target/product/dew/boot.img
+            fox/out/target/product/dew/*.img
           if-no-files-found: warn
