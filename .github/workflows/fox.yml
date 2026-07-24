@@ -60,19 +60,7 @@ jobs:
       - name: Initialize OrangeFox source
         run: |
           cd "$GITHUB_WORKSPACE"
-
-          mkdir -p fox
-
-          git clone \
-            --depth=1 \
-            https://gitlab.com/OrangeFox/Recovery.git \
-            fox
-
-          echo "===== ORANGEFOX ROOT ====="
-          ls -la "$GITHUB_WORKSPACE/fox"
-
-          echo "===== ENVSETUP ====="
-          ls -lh "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
+          git clone --depth=1 -b fox_14.1 https://gitlab.com/OrangeFox/bootable/Recovery.git fox
 
 
       # ============================================================
