@@ -67,6 +67,25 @@ jobs:
 
           "$HOME/bin/repo" --version
 
+
+      - name: Free disk space
+        run: |
+          echo "===== DISK BEFORE ====="
+          df -h
+
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/local/share/chromium
+          sudo rm -rf /usr/local/lib/node_modules
+
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "===== DISK AFTER ====="
+          df -h   
+
       # ============================================================
       # 3. Descargar OrangeFox
       # ============================================================
@@ -174,29 +193,7 @@ jobs:
 
           source build/envsetup.sh
 
-          lunch fox_dew-ap2a-eng
-
-      - name: Increase swap space
-        run: |
-          echo "===== MEMORY BEFORE ====="
-          free -h
-
-          echo "===== CURRENT SWAP ====="
-          swapon --show
-
-          sudo swapoff /swapfile || true
-          sudo rm -f /swapfile
-
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-
-          echo "===== MEMORY AFTER ====="
-          free -h
-
-          echo "===== SWAP AFTER ====="
-          swapon --show     
+          lunch fox_dew-ap2a-eng    
 
       # ============================================================
       # 8. Compilar OrangeFox
