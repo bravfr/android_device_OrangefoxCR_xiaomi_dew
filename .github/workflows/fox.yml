@@ -175,13 +175,7 @@ jobs:
           source build/envsetup.sh
 
           lunch fox_dew-ap2a-eng
-
-      - name: Configure build resources
-        run: |
-          export USE_CCACHE=1
-          export SOONG_UI_NINJA_ARGS="-j2"
-          export NINJA_ARGS="-j2"
-          export JVM_ARGS="-Xmx2048m"
+          
 
       # ============================================================
       # 8. Compilar OrangeFox
@@ -190,11 +184,23 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/fox"
 
+          export USE_CCACHE=1
+          export SOONG_UI_NINJA_ARGS="-j2"
+          export NINJA_ARGS="-j2"
+          export JVM_ARGS="-Xmx2048m"
+
+          echo "===== BUILD RESOURCES ====="
+          echo "NINJA_ARGS=$NINJA_ARGS"
+          echo "SOONG_UI_NINJA_ARGS=$SOONG_UI_NINJA_ARGS"
+          echo "JVM_ARGS=$JVM_ARGS"
+
           source build/envsetup.sh
 
           lunch fox_dew-ap2a-eng
 
-          mka recoveryimage
+          echo "===== STARTING ORANGEFOX BUILD ====="
+
+          mka -j2 recoveryimage
 
 
       # ============================================================
