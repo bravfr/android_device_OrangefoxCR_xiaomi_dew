@@ -175,7 +175,22 @@ jobs:
           source build/envsetup.sh
 
           lunch fox_dew-ap2a-eng
-          
+
+      - name: Add swap space
+        run: |
+          echo "===== MEMORY BEFORE SWAP ====="
+          free -h
+
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
+          echo "===== MEMORY AFTER SWAP ====="
+          free -h
+
+          echo "===== SWAP ====="
+          swapon --show    
 
       # ============================================================
       # 8. Compilar OrangeFox
@@ -188,7 +203,8 @@ jobs:
           export NINJA_ARGS="-j2"
 
           echo "===== BUILD RESOURCES ====="
-          echo "NINJA_ARGS=$NINJA_ARGS"
+          free -h
+          swapon --show
 
           source build/envsetup.sh
 
