@@ -157,6 +157,12 @@ jobs:
             https://github.com/mt6768-devs/android_device_mediatek_sepolicy_vndr.git \
             "$GITHUB_WORKSPACE/fox/device/mediatek/sepolicy_vndr"
 
+      - name: Check OrangeFox theme
+        run: |
+          find "$GITHUB_WORKSPACE/fox" \
+            -type f \
+            -name ui.xml
+
       # ============================================================
       # 7. Preparar compilación
       # ============================================================
