@@ -188,7 +188,7 @@ jobs:
 
           lunch fox_dew-ap2a-eng
 
-          mka recoveryimage
+          mka -j2 recoveryimage
 
 
       # ============================================================
