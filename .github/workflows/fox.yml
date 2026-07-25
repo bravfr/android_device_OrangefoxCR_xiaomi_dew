@@ -176,6 +176,12 @@ jobs:
 
           lunch fox_dew-ap2a-eng
 
+      - name: Configure build resources
+        run: |
+          export USE_CCACHE=1
+          export SOONG_UI_NINJA_ARGS="-j2"
+          export NINJA_ARGS="-j2"
+          export JVM_ARGS="-Xmx2048m"
 
       # ============================================================
       # 8. Compilar OrangeFox
@@ -188,7 +194,7 @@ jobs:
 
           lunch fox_dew-ap2a-eng
 
-          mka -j2 recoveryimage
+          mka recoveryimage
 
 
       # ============================================================
