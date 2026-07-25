@@ -207,4 +207,4 @@ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE += \
     hardware/xiaomi/vintf/xiaomi_framework_compatibility_matrix.xml
 
 # Inherit the proprietary files
-include vendor/xiaomi/dew/BoardConfigVendor.mk
+# include vendor/xiaomi/dew/BoardConfigVendor.mk
