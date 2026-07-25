@@ -176,21 +176,27 @@ jobs:
 
           lunch fox_dew-ap2a-eng
 
-      - name: Add swap space
+      - name: Increase swap space
         run: |
-          echo "===== MEMORY BEFORE SWAP ====="
+          echo "===== MEMORY BEFORE ====="
           free -h
+
+          echo "===== CURRENT SWAP ====="
+          swapon --show
+
+          sudo swapoff /swapfile || true
+          sudo rm -f /swapfile
 
           sudo fallocate -l 8G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
 
-          echo "===== MEMORY AFTER SWAP ====="
+          echo "===== MEMORY AFTER ====="
           free -h
 
-          echo "===== SWAP ====="
-          swapon --show    
+          echo "===== SWAP AFTER ====="
+          swapon --show     
 
       # ============================================================
       # 8. Compilar OrangeFox
