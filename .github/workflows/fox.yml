@@ -1,346 +1,386 @@
 name: Build OrangeFox Recovery
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-build:
-runs-on: ubuntu-22.04
-timeout-minutes: 360
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+
+      # ============================================================
+      # 1. CHECKOUT DEVICE TREE
+      # ============================================================
+      - name: Checkout device tree
+        uses: actions/checkout@v4
+        with:
+          path: device/xiaomi/dew
+
+
+      # ============================================================
+      # 2. SHOW INITIAL RUNNER RESOURCES
+      # ============================================================
+      - name: Initial runner resources
+        run: |
+          echo "===== CPU ====="
+          nproc
 
-```
-steps:
-
-  # ============================================================
-  # 1. CHECKOUT DEVICE TREE
-  # ============================================================
-  - name: Checkout device tree
-    uses: actions/checkout@v4
-    with:
-      path: device/xiaomi/dew
-
-
-  # ============================================================
-  # 2. SHOW INITIAL RUNNER RESOURCES
-  # ============================================================
-  - name: Initial runner resources
-    run: |
-      echo "===== CPU ====="
-      nproc
-
-      echo
-      echo "===== MEMORY ====="
-      free -h
-
-      echo
-      echo "===== DISK ====="
-      df -h
-
-      echo
-      echo "===== SWAP ====="
-      swapon --show || true
-
-
-  # ============================================================
-  # 3. FREE DISK SPACE
-  # ============================================================
-  - name: Free runner disk space
-    run: |
-      echo "===== DISK BEFORE CLEANUP ====="
-      df -h
-
-      echo
-      echo "Removing unused large packages..."
-
-      sudo rm -rf /usr/local/lib/android/sdk/ndk || true
-      sudo rm -rf /usr/local/lib/android/sdk/cmake || true
-      sudo rm -rf /usr/share/dotnet || true
-      sudo rm -rf /opt/ghc || true
-      sudo rm -rf /usr/local/share/boost || true
-      sudo rm -rf /usr/local/lib/node_modules || true
-
-      sudo apt-get clean || true
-      sudo rm -rf /var/lib/apt/lists/* || true
-
-      echo
-      echo "===== DISK AFTER CLEANUP ====="
-      df -h
-
-
-  # ============================================================
-  # 4. CONFIGURE 8 GB SWAP
-  # ============================================================
-  - name: Configure 8GB swap
-    run: |
-      echo "===== CURRENT SWAP ====="
-      swapon --show || true
-
-      echo
-      echo "Disabling existing swap..."
-
-      sudo swapoff -a || true
-
-      echo
-      echo "Removing old swapfile..."
-
-      sudo rm -f /swapfile || true
-
-      echo
-      echo "Creating 8GB swapfile..."
-
-      sudo fallocate -l 8G /swapfile
-
-      sudo chmod 600 /swapfile
-
-      sudo mkswap /swapfile
-
-      sudo swapon /swapfile
-
-      echo
-      echo "===== FINAL SWAP ====="
-
-      free -h
-
-      echo
-      swapon --show
-
-
-  # ============================================================
-  # 5. INSTALL DEPENDENCIES
-  # ============================================================
-  - name: Install dependencies
-    run: |
-      sudo apt-get update
-
-      sudo apt-get install -y \
-        git \
-        curl \
-        wget \
-        python3 \
-        python3-pip \
-        unzip \
-        zip \
-        bc \
-        bison \
-        flex \
-        build-essential \
-        gcc \
-        g++ \
-        make \
-        ninja-build \
-        libssl-dev \
-        libelf-dev \
-        liblz4-tool \
-        lz4 \
-        rsync \
-        cpio \
-        kmod \
-        libxml2-utils \
-        xsltproc \
-        openjdk-11-jdk
-
-
-  # ============================================================
-  # 6. INSTALL REPO TOOL
-  # ============================================================
-  - name: Install repo tool
-    run: |
-      mkdir -p "$HOME/bin"
-
-      curl -L \
-        https://storage.googleapis.com/git-repo-downloads/repo \
-        -o "$HOME/bin/repo"
-
-      chmod +x "$HOME/bin/repo"
-
-      echo "$HOME/bin" >> "$GITHUB_PATH"
-
-      "$HOME/bin/repo" --version
-
-
-  # ============================================================
-  # 7. DOWNLOAD ORANGEFOX
-  # ============================================================
-  - name: Initialize OrangeFox source
-    run: |
-      cd "$GITHUB_WORKSPACE"
-
-      git clone \
-        --depth=1 \
-        https://gitlab.com/OrangeFox/sync.git \
-        sync
-
-      cd sync
-
-      ./orangefox_sync.sh \
-        --branch 14.1 \
-        --path "$GITHUB_WORKSPACE/fox"
-
-      echo
-      echo "===== ORANGEFOX ROOT ====="
-
-      ls -la "$GITHUB_WORKSPACE/fox"
-
-      echo
-      echo "===== ENVSETUP ====="
-
-      ls -lh \
-        "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
-
-
-  # ============================================================
-  # 8. COPY DEVICE TREE
-  # ============================================================
-  - name: Add device tree
-    run: |
-      mkdir -p \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi"
-
-      rm -rf \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
-
-      cp -r \
-        "$GITHUB_WORKSPACE/device/xiaomi/dew" \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
-
-
-  # ============================================================
-  # 9. DOWNLOAD PREBUILT KERNEL
-  # ============================================================
-  - name: Clone dew kernel
-    run: |
-      git clone \
-        --depth=1 \
-        --branch lineage-23.2 \
-        https://github.com/mt6768-devs/android_device_xiaomi_dew-kernel.git \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel"
-
-
-  # ============================================================
-  # 10. VERIFY KERNEL
-  # ============================================================
-  - name: Verify kernel
-    run: |
-      echo "===== KERNEL ====="
-
-      ls -lh \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
-
-      echo
-      echo "===== DTB ====="
-
-      ls -lh \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
-
-      echo
-      echo "===== MODULES ====="
-
-      find \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
-        -type f \
-        -name "*.ko" \
-        -print
-
-      echo
-      echo "===== MODULES.LOAD ====="
-
-      find \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
-        -type f \
-        -name "modules.load*" \
-        -print
-
-
-  # ============================================================
-  # 11. DOWNLOAD MEDIATEK SEPOLICY
-  # ============================================================
-  - name: Clone MediaTek sepolicy
-    run: |
-      git clone \
-        --depth=1 \
-        --branch lineage-23.2 \
-        https://github.com/mt6768-devs/android_device_mediatek_sepolicy_vndr.git \
-        "$GITHUB_WORKSPACE/fox/device/mediatek/sepolicy_vndr"
-
-
-  # ============================================================
-  # 12. VERIFY ORANGEFOX THEME
-  # ============================================================
-  - name: Check OrangeFox theme
-    run: |
-      echo "===== ORANGEFOX THEMES ====="
-
-      find "$GITHUB_WORKSPACE/fox" \
-        -type f \
-        -name "ui.xml" \
-        -print
-
-      echo
-      echo "===== PORTRAIT HDPI THEME ====="
-
-      ls -lh \
-        "$GITHUB_WORKSPACE/fox/bootable/recovery/gui/theme/portrait_hdpi/ui.xml"
-
-
-  # ============================================================
-  # 13. PREPARE BUILD
-  # ============================================================
-  - name: Prepare build
-    run: |
-      cd "$GITHUB_WORKSPACE/fox"
-
-      source build/envsetup.sh
-
-      lunch fox_dew-ap2a-eng
-
-
-  # ============================================================
-  # 14. CONFIGURE BUILD ENVIRONMENT
-  # ============================================================
-  - name: Configure build environment
-    run: |
-      echo "===== BUILD ENVIRONMENT ====="
-
-      export USE_CCACHE=0
-
-      export NINJA_ARGS="-j2"
-
-      echo "USE_CCACHE=$USE_CCACHE"
-      echo "NINJA_ARGS=$NINJA_ARGS"
-
-      echo
-      echo "===== CPU ====="
-
-      nproc
-
-      echo
-      echo "===== MEMORY ====="
-
-      free -h
-
-      echo
-      echo "===== SWAP ====="
-
-      swapon --show
-
-      echo
-      echo "===== DISK ====="
-
-      df -h
-
-
-  # ============================================================
-  # 15. RESOURCE MONITOR
-  # ============================================================
-  - name: Start resource monitor
-    run: |
-      (
-        while true
-        do
           echo
-          echo "============================================================"
-          echo "===== RESOURCE MONITOR $(date) ====="
-          echo "============================================================"
+          echo "===== MEMORY ====="
+          free -h
+
+          echo
+          echo "===== DISK ====="
+          df -h
+
+          echo
+          echo "===== SWAP ====="
+          swapon --show || true
+
+
+      # ============================================================
+      # 3. FREE DISK SPACE
+      # ============================================================
+      - name: Free runner disk space
+        run: |
+          echo "===== DISK BEFORE CLEANUP ====="
+          df -h
+
+          echo
+          echo "Removing unused large packages..."
+
+          sudo rm -rf /usr/local/lib/android/sdk/ndk || true
+          sudo rm -rf /usr/local/lib/android/sdk/cmake || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /usr/local/lib/node_modules || true
+
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+
+          echo
+          echo "===== DISK AFTER CLEANUP ====="
+          df -h
+
+
+      # ============================================================
+      # 4. CONFIGURE 8 GB SWAP
+      # ============================================================
+      - name: Configure 8GB swap
+        run: |
+          echo "===== CURRENT SWAP ====="
+          swapon --show || true
+
+          echo
+          echo "Disabling existing swap..."
+
+          sudo swapoff -a || true
+
+          echo
+          echo "Removing old swapfile..."
+
+          sudo rm -f /swapfile || true
+
+          echo
+          echo "Creating 8GB swapfile..."
+
+          sudo fallocate -l 8G /swapfile
+
+          sudo chmod 600 /swapfile
+
+          sudo mkswap /swapfile
+
+          sudo swapon /swapfile
+
+          echo
+          echo "===== FINAL SWAP ====="
+
+          free -h
+
+          echo
+          swapon --show
+
+
+      # ============================================================
+      # 5. INSTALL DEPENDENCIES
+      # ============================================================
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            git \
+            curl \
+            wget \
+            python3 \
+            python3-pip \
+            unzip \
+            zip \
+            bc \
+            bison \
+            flex \
+            build-essential \
+            gcc \
+            g++ \
+            make \
+            ninja-build \
+            libssl-dev \
+            libelf-dev \
+            liblz4-tool \
+            lz4 \
+            rsync \
+            cpio \
+            kmod \
+            libxml2-utils \
+            xsltproc \
+            openjdk-11-jdk
+
+
+      # ============================================================
+      # 6. INSTALL REPO TOOL
+      # ============================================================
+      - name: Install repo tool
+        run: |
+          mkdir -p "$HOME/bin"
+
+          curl -L \
+            https://storage.googleapis.com/git-repo-downloads/repo \
+            -o "$HOME/bin/repo"
+
+          chmod +x "$HOME/bin/repo"
+
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+          "$HOME/bin/repo" --version
+
+
+      # ============================================================
+      # 7. DOWNLOAD ORANGEFOX
+      # ============================================================
+      - name: Initialize OrangeFox source
+        run: |
+          cd "$GITHUB_WORKSPACE"
+
+          git clone \
+            --depth=1 \
+            https://gitlab.com/OrangeFox/sync.git \
+            sync
+
+          cd sync
+
+          ./orangefox_sync.sh \
+            --branch 14.1 \
+            --path "$GITHUB_WORKSPACE/fox"
+
+          echo
+          echo "===== ORANGEFOX ROOT ====="
+
+          ls -la "$GITHUB_WORKSPACE/fox"
+
+          echo
+          echo "===== ENVSETUP ====="
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
+
+
+      # ============================================================
+      # 8. COPY DEVICE TREE
+      # ============================================================
+      - name: Add device tree
+        run: |
+          mkdir -p \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi"
+
+          rm -rf \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
+
+          cp -r \
+            "$GITHUB_WORKSPACE/device/xiaomi/dew" \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
+
+
+      # ============================================================
+      # 9. DOWNLOAD PREBUILT KERNEL
+      # ============================================================
+      - name: Clone dew kernel
+        run: |
+          git clone \
+            --depth=1 \
+            --branch lineage-23.2 \
+            https://github.com/mt6768-devs/android_device_xiaomi_dew-kernel.git \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel"
+
+
+      # ============================================================
+      # 10. VERIFY KERNEL
+      # ============================================================
+      - name: Verify kernel
+        run: |
+          echo "===== KERNEL ====="
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
+
+          echo
+          echo "===== DTB ====="
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
+
+          echo
+          echo "===== MODULES ====="
+
+          find \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
+            -type f \
+            -name "*.ko" \
+            -print
+
+          echo
+          echo "===== MODULES.LOAD ====="
+
+          find \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/modules" \
+            -type f \
+            -name "modules.load*" \
+            -print
+
+
+      # ============================================================
+      # 11. DOWNLOAD MEDIATEK SEPOLICY
+      # ============================================================
+      - name: Clone MediaTek sepolicy
+        run: |
+          git clone \
+            --depth=1 \
+            --branch lineage-23.2 \
+            https://github.com/mt6768-devs/android_device_mediatek_sepolicy_vndr.git \
+            "$GITHUB_WORKSPACE/fox/device/mediatek/sepolicy_vndr"
+
+
+      # ============================================================
+      # 12. VERIFY ORANGEFOX THEME
+      # ============================================================
+      - name: Check OrangeFox theme
+        run: |
+          echo "===== ORANGEFOX THEMES ====="
+
+          find "$GITHUB_WORKSPACE/fox" \
+            -type f \
+            -name "ui.xml" \
+            -print
+
+          echo
+          echo "===== PORTRAIT HDPI THEME ====="
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/bootable/recovery/gui/theme/portrait_hdpi/ui.xml"
+
+
+      # ============================================================
+      # 13. PREPARE BUILD
+      # ============================================================
+      - name: Prepare build
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
+
+          source build/envsetup.sh
+
+          lunch fox_dew-ap2a-eng
+
+
+      # ============================================================
+      # 14. CONFIGURE BUILD ENVIRONMENT
+      # ============================================================
+      - name: Configure build environment
+        run: |
+          echo "===== BUILD ENVIRONMENT ====="
+
+          export USE_CCACHE=0
+
+          export NINJA_ARGS="-j2"
+
+          echo "USE_CCACHE=$USE_CCACHE"
+          echo "NINJA_ARGS=$NINJA_ARGS"
+
+          echo
+          echo "===== CPU ====="
+
+          nproc
+
+          echo
+          echo "===== MEMORY ====="
+
+          free -h
+
+          echo
+          echo "===== SWAP ====="
+
+          swapon --show
+
+          echo
+          echo "===== DISK ====="
+
+          df -h
+
+
+      # ============================================================
+      # 15. RESOURCE MONITOR
+      # ============================================================
+      - name: Start resource monitor
+        run: |
+          (
+            while true
+            do
+              echo
+              echo "============================================================"
+              echo "===== RESOURCE MONITOR $(date) ====="
+              echo "============================================================"
+
+              echo
+              echo "===== MEMORY ====="
+              free -h
+
+              echo
+              echo "===== SWAP ====="
+              swapon --show
+
+              echo
+              echo "===== DISK ====="
+              df -h /
+
+              echo
+              echo "===== TOP PROCESSES ====="
+              ps aux --sort=-%mem | head -15
+
+              echo
+              echo "===== LOAD ====="
+              uptime
+
+              sleep 60
+            done
+          ) > "$GITHUB_WORKSPACE/resource-monitor.log" 2>&1 &
+
+          echo $! > "$GITHUB_WORKSPACE/resource-monitor.pid"
+
+          echo "Resource monitor PID:"
+          cat "$GITHUB_WORKSPACE/resource-monitor.pid"
+
+
+      # ============================================================
+      # 16. FINAL PRE-BUILD CHECK
+      # ============================================================
+      - name: Final pre-build resources
+        run: |
+          echo "===== FINAL PRE-BUILD CHECK ====="
+
+          echo
+          echo "===== CPU ====="
+          nproc
 
           echo
           echo "===== MEMORY ====="
@@ -355,202 +395,161 @@ steps:
           df -h /
 
           echo
-          echo "===== TOP PROCESSES ====="
-          ps aux --sort=-%mem | head -15
+          echo "===== DEVICE TREE ====="
+          ls -la "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
 
           echo
-          echo "===== LOAD ====="
-          uptime
+          echo "===== KERNEL ====="
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
 
-          sleep 60
-        done
-      ) > "$GITHUB_WORKSPACE/resource-monitor.log" 2>&1 &
-
-      echo $! > "$GITHUB_WORKSPACE/resource-monitor.pid"
-
-      echo "Resource monitor PID:"
-      cat "$GITHUB_WORKSPACE/resource-monitor.pid"
+          echo
+          echo "===== DTB ====="
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
 
 
-  # ============================================================
-  # 16. FINAL PRE-BUILD CHECK
-  # ============================================================
-  - name: Final pre-build resources
-    run: |
-      echo "===== FINAL PRE-BUILD CHECK ====="
+      # ============================================================
+      # 17. BUILD ORANGEFOX
+      # ============================================================
+      - name: Build OrangeFox
+        timeout-minutes: 300
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
 
-      echo
-      echo "===== CPU ====="
-      nproc
+          export USE_CCACHE=0
 
-      echo
-      echo "===== MEMORY ====="
-      free -h
+          export NINJA_ARGS="-j2"
 
-      echo
-      echo "===== SWAP ====="
-      swapon --show
+          echo "===== STARTING ORANGEFOX BUILD ====="
 
-      echo
-      echo "===== DISK ====="
-      df -h /
+          date
 
-      echo
-      echo "===== DEVICE TREE ====="
-      ls -la "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
+          echo
+          echo "===== BUILD RESOURCES ====="
 
-      echo
-      echo "===== KERNEL ====="
-      ls -lh \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
+          free -h
 
-      echo
-      echo "===== DTB ====="
-      ls -lh \
-        "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
+          echo
+          swapon --show
 
+          echo
+          df -h /
 
-  # ============================================================
-  # 17. BUILD ORANGEFOX
-  # ============================================================
-  - name: Build OrangeFox
-    timeout-minutes: 300
-    run: |
-      cd "$GITHUB_WORKSPACE/fox"
+          echo
+          echo "===== BUILD VARIABLES ====="
 
-      export USE_CCACHE=0
+          echo "USE_CCACHE=$USE_CCACHE"
+          echo "NINJA_ARGS=$NINJA_ARGS"
 
-      export NINJA_ARGS="-j2"
+          echo
+          echo "===== ENVSETUP ====="
 
-      echo "===== STARTING ORANGEFOX BUILD ====="
+          source build/envsetup.sh
 
-      date
+          echo
+          echo "===== LUNCH ====="
 
-      echo
-      echo "===== BUILD RESOURCES ====="
+          lunch fox_dew-ap2a-eng
 
-      free -h
+          echo
+          echo "===== STARTING RECOVERYIMAGE ====="
 
-      echo
-      swapon --show
-
-      echo
-      df -h /
-
-      echo
-      echo "===== BUILD VARIABLES ====="
-
-      echo "USE_CCACHE=$USE_CCACHE"
-      echo "NINJA_ARGS=$NINJA_ARGS"
-
-      echo
-      echo "===== ENVSETUP ====="
-
-      source build/envsetup.sh
-
-      echo
-      echo "===== LUNCH ====="
-
-      lunch fox_dew-ap2a-eng
-
-      echo
-      echo "===== STARTING RECOVERYIMAGE ====="
-
-      mka recoveryimage -j2
+          mka recoveryimage -j2
 
 
-  # ============================================================
-  # 18. STOP RESOURCE MONITOR
-  # ============================================================
-  - name: Stop resource monitor
-    if: always()
-    run: |
-      if [ -f "$GITHUB_WORKSPACE/resource-monitor.pid" ]; then
-        kill "$(cat "$GITHUB_WORKSPACE/resource-monitor.pid")" || true
-      fi
+      # ============================================================
+      # 18. STOP RESOURCE MONITOR
+      # ============================================================
+      - name: Stop resource monitor
+        if: always()
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/resource-monitor.pid" ]; then
+            kill "$(cat "$GITHUB_WORKSPACE/resource-monitor.pid")" || true
+          fi
 
 
-  # ============================================================
-  # 19. FINAL RESOURCE REPORT
-  # ============================================================
-  - name: Final resource report
-    if: always()
-    run: |
-      echo "===== FINAL MEMORY ====="
+      # ============================================================
+      # 19. FINAL RESOURCE REPORT
+      # ============================================================
+      - name: Final resource report
+        if: always()
+        run: |
+          echo "===== FINAL MEMORY ====="
 
-      free -h
+          free -h
 
-      echo
-      echo "===== FINAL SWAP ====="
+          echo
+          echo "===== FINAL SWAP ====="
 
-      swapon --show
+          swapon --show
 
-      echo
-      echo "===== FINAL DISK ====="
+          echo
+          echo "===== FINAL DISK ====="
 
-      df -h /
+          df -h /
 
-      echo
-      echo "===== RESOURCE MONITOR LOG ====="
+          echo
+          echo "===== RESOURCE MONITOR LOG ====="
 
-      if [ -f "$GITHUB_WORKSPACE/resource-monitor.log" ]; then
-        tail -100 \
-          "$GITHUB_WORKSPACE/resource-monitor.log"
-      fi
-
-
-  # ============================================================
-  # 20. FIND OUTPUT
-  # ============================================================
-  - name: Find output
-    if: always()
-    run: |
-      cd "$GITHUB_WORKSPACE/fox"
-
-      echo "===== OUTPUT DIRECTORY ====="
-
-      if [ -d "out/target/product/dew" ]; then
-
-        find \
-          out/target/product/dew \
-          -maxdepth 3 \
-          -type f \
-          \( \
-            -name "*.img" \
-            -o \
-            -name "*.zip" \
-          \) \
-          -exec ls -lh {} \;
-
-      else
-
-        echo "Output directory does not exist."
-
-      fi
+          if [ -f "$GITHUB_WORKSPACE/resource-monitor.log" ]; then
+            tail -100 \
+              "$GITHUB_WORKSPACE/resource-monitor.log"
+          fi
 
 
-  # ============================================================
-  # 21. UPLOAD RESOURCE LOG
-  # ============================================================
-  - name: Upload resource monitor
-    if: always()
-    uses: actions/upload-artifact@v4
-    with:
-      name: OrangeFox-resource-monitor
-      path: |
-        resource-monitor.log
-      if-no-files-found: warn
+      # ============================================================
+      # 20. FIND OUTPUT
+      # ============================================================
+      - name: Find output
+        if: always()
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
+
+          echo "===== OUTPUT DIRECTORY ====="
+
+          if [ -d "out/target/product/dew" ]; then
+
+            find \
+              out/target/product/dew \
+              -maxdepth 3 \
+              -type f \
+              \( \
+                -name "*.img" \
+                -o \
+                -name "*.zip" \
+              \) \
+              -exec ls -lh {} \;
+
+          else
+
+            echo "Output directory does not exist."
+
+          fi
 
 
-  # ============================================================
-  # 22. UPLOAD ORANGEFOX OUTPUT
-  # ============================================================
-  - name: Upload OrangeFox
-    if: always()
-    uses: actions/upload-artifact@v4
-    with:
-      name: OrangeFox-dew
-      path: |
-        fox/out/target/product/dew/*.img
-        fox/out/target/product/dew/*.zip
-      if-no-files-found: warn
+      # ============================================================
+      # 21. UPLOAD RESOURCE LOG
+      # ============================================================
+      - name: Upload resource monitor
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrangeFox-resource-monitor
+          path: |
+            resource-monitor.log
+          if-no-files-found: warn
+
+
+      # ============================================================
+      # 22. UPLOAD ORANGEFOX OUTPUT
+      # ============================================================
+      - name: Upload OrangeFox
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrangeFox-dew
+          path: |
+            fox/out/target/product/dew/*.img
+            fox/out/target/product/dew/*.zip
+          if-no-files-found: warn
