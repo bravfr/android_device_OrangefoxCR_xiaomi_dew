@@ -193,7 +193,21 @@ jobs:
 
           source build/envsetup.sh
 
-          lunch fox_dew-ap2a-eng    
+          lunch fox_dew-ap2a-eng
+
+      - name: Monitor resources
+        run: |
+          echo "===== MEMORY ====="
+          free -h
+
+          echo "===== SWAP ====="
+          swapon --show
+
+          echo "===== DISK ====="
+          df -h
+
+          echo "===== TOP MEMORY PROCESSES ====="
+          ps aux --sort=-%mem | head -15
 
       # ============================================================
       # 8. Compilar OrangeFox
@@ -203,11 +217,12 @@ jobs:
           cd "$GITHUB_WORKSPACE/fox"
 
           export USE_CCACHE=1
-          export NINJA_ARGS="-j2"
+          export NINJA_ARGS="-j1"
 
           echo "===== BUILD RESOURCES ====="
           free -h
           swapon --show
+          df -h
 
           source build/envsetup.sh
 
@@ -215,7 +230,7 @@ jobs:
 
           echo "===== STARTING ORANGEFOX BUILD ====="
 
-          mka -j2 recoveryimage
+          mka -j1 recoveryimage
 
 
       # ============================================================
