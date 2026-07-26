@@ -10,7 +10,7 @@ jobs:
     steps:
 
       # ============================================================
-      # 1. Checkout device tree
+      # 1. CHECKOUT DEVICE TREE
       # ============================================================
       - name: Checkout device tree
         uses: actions/checkout@v4
@@ -19,57 +19,32 @@ jobs:
 
 
       # ============================================================
-      # 2. Liberar espacio del runner
+      # 2. FREE DISK SPACE
       # ============================================================
       - name: Free disk space
         run: |
           echo "===== DISK BEFORE ====="
           df -h
 
-          echo "===== REMOVING LARGE PREINSTALLED PACKAGES ====="
+          echo
+          echo "===== REMOVE LARGE PREINSTALLED SOFTWARE ====="
 
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/share/powershell
-          sudo rm -rf /usr/local/share/chromium
           sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/local/lib/node_modules
 
           sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
+          echo
           echo "===== DISK AFTER ====="
           df -h
 
 
       # ============================================================
-      # 3. Crear SWAP robusto
-      # ============================================================
-      - name: Configure swap
-        run: |
-          echo "===== SWAP BEFORE ====="
-          swapon --show || true
-
-          if [ -f /swapfile ]; then
-            sudo swapoff /swapfile || true
-            sudo rm -f /swapfile
-          fi
-
-          echo "===== CREATING 8GB SWAP ====="
-
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-
-          echo "===== SWAP AFTER ====="
-          swapon --show
-
-          echo "===== MEMORY ====="
-          free -h
-
-
-      # ============================================================
-      # 4. Instalar dependencias
+      # 3. INSTALL DEPENDENCIES
       # ============================================================
       - name: Install dependencies
         run: |
@@ -103,9 +78,36 @@ jobs:
             xsltproc \
             openjdk-11-jdk
 
+          sudo apt-get clean
+
 
       # ============================================================
-      # 5. Instalar repo
+      # 4. CREATE SWAP
+      # ============================================================
+      - name: Configure swap
+        run: |
+          echo "===== SWAP BEFORE ====="
+          free -h
+          swapon --show || true
+
+          if [ -f /swapfile ]; then
+            sudo swapoff /swapfile || true
+            sudo rm -f /swapfile
+          fi
+
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
+          echo
+          echo "===== SWAP AFTER ====="
+          free -h
+          swapon --show
+
+
+      # ============================================================
+      # 5. INSTALL REPO TOOL
       # ============================================================
       - name: Install repo tool
         run: |
@@ -123,7 +125,7 @@ jobs:
 
 
       # ============================================================
-      # 6. Descargar OrangeFox
+      # 6. INITIALIZE ORANGEFOX
       # ============================================================
       - name: Initialize OrangeFox source
         run: |
@@ -143,17 +145,21 @@ jobs:
           echo "===== ORANGEFOX ROOT ====="
           ls -la "$GITHUB_WORKSPACE/fox"
 
+          echo
           echo "===== ENVSETUP ====="
           ls -lh "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
 
 
       # ============================================================
-      # 7. Copiar device tree
+      # 7. COPY DEVICE TREE
       # ============================================================
       - name: Add device tree
         run: |
           mkdir -p \
             "$GITHUB_WORKSPACE/fox/device/xiaomi"
+
+          rm -rf \
+            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
 
           cp -r \
             "$GITHUB_WORKSPACE/device/xiaomi/dew" \
@@ -161,7 +167,7 @@ jobs:
 
 
       # ============================================================
-      # 8. Descargar kernel precompilado
+      # 8. CLONE PREBUILT KERNEL
       # ============================================================
       - name: Clone dew kernel
         run: |
@@ -173,7 +179,7 @@ jobs:
 
 
       # ============================================================
-      # 9. Verificar kernel
+      # 9. VERIFY KERNEL
       # ============================================================
       - name: Verify kernel
         run: |
@@ -208,7 +214,7 @@ jobs:
 
 
       # ============================================================
-      # 10. Descargar MediaTek SEPolicy
+      # 10. CLONE MEDIATEK SEPOLICY
       # ============================================================
       - name: Clone MediaTek sepolicy
         run: |
@@ -220,72 +226,22 @@ jobs:
 
 
       # ============================================================
-      # 11. Verificar tema OrangeFox
+      # 11. CHECK ORANGEFOX THEME
       # ============================================================
       - name: Check OrangeFox theme
         run: |
-          echo "===== ORANGEFOX THEMES ====="
-
           find "$GITHUB_WORKSPACE/fox" \
             -type f \
-            -name ui.xml \
-            -print
-
-          echo
-          echo "===== PORTRAIT HDPI ====="
-
-          ls -lh \
-            "$GITHUB_WORKSPACE/fox/bootable/recovery/gui/theme/portrait_hdpi/ui.xml"
+            -name ui.xml
 
 
       # ============================================================
-      # 12. Monitor de recursos
-      # ============================================================
-      - name: Monitor runner resources
-        run: |
-          echo "===== RUNNER RESOURCE LIMITS ====="
-
-          echo
-          echo "===== CPU ====="
-          nproc
-
-          echo
-          echo "===== MEMORY ====="
-          free -h
-
-          echo
-          echo "===== SWAP ====="
-          swapon --show
-
-          echo
-          echo "===== DISK ====="
-          df -h
-
-          echo
-          echo "===== TOP MEMORY PROCESSES ====="
-          ps aux --sort=-%mem | head -20
-
-          echo
-          echo "===== CGROUP MEMORY LIMIT ====="
-          cat /sys/fs/cgroup/memory.max 2>/dev/null || true
-
-          echo
-          echo "===== CGROUP MEMORY CURRENT ====="
-          cat /sys/fs/cgroup/memory.current 2>/dev/null || true
-
-          echo
-          echo "===== CGROUP MEMORY EVENTS ====="
-          cat /sys/fs/cgroup/memory.events 2>/dev/null || true
-
-
-      # ============================================================
-      # 13. Preparar compilación
+      # 12. PREPARE BUILD
       # ============================================================
       - name: Prepare build
+        shell: bash
         run: |
           cd "$GITHUB_WORKSPACE/fox"
-
-          echo "===== ENVSETUP ====="
 
           source build/envsetup.sh
 
@@ -293,12 +249,16 @@ jobs:
 
 
       # ============================================================
-      # 14. Configurar recursos de compilación
+      # 13. CONFIGURE BUILD
       # ============================================================
-      - name: Configure build resources
+      - name: Configure build
         run: |
-          echo "===== BUILD RESOURCES ====="
+          echo "===== BUILD CONFIGURATION ====="
 
+          echo "NINJA_ARGS=-j2"
+          echo "USE_CCACHE=1"
+
+          echo
           echo "===== MEMORY ====="
           free -h
 
@@ -314,57 +274,103 @@ jobs:
           echo "===== CPU ====="
           nproc
 
-          # NO usar SOONG_UI_NINJA_ARGS
-          #
-          # Soong advierte que modificar esta variable
-          # puede provocar fallos o resultados incorrectos.
-          #
-          # Dejamos Ninja limitado a 2 jobs.
-          export USE_CCACHE=1
-          export NINJA_ARGS="-j2"
 
-          echo
-          echo "NINJA_ARGS=$NINJA_ARGS"
+      # ============================================================
+      # 14. MONITOR RESOURCES
+      # ============================================================
+      - name: Start resource monitor
+        shell: bash
+        run: |
+          cat > /tmp/resource-monitor.sh <<'EOF'
+          #!/bin/bash
+
+          while true; do
+            echo
+            echo "===== RESOURCE MONITOR ====="
+            date
+
+            echo
+            echo "--- MEMORY ---"
+            free -h
+
+            echo
+            echo "--- SWAP ---"
+            swapon --show
+
+            echo
+            echo "--- DISK ---"
+            df -h /
+
+            echo
+            echo "--- LOAD ---"
+            uptime
+
+            sleep 60
+          done
+          EOF
+
+          chmod +x /tmp/resource-monitor.sh
+
+          nohup /tmp/resource-monitor.sh \
+            > "$GITHUB_WORKSPACE/resource-monitor.log" \
+            2>&1 &
+
+          echo $! > /tmp/resource-monitor.pid
 
 
       # ============================================================
-      # 15. Build OrangeFox
+      # 15. BUILD ORANGEFOX
       # ============================================================
       - name: Build OrangeFox
-        timeout-minutes: 120
+        shell: bash
+        env:
+          USE_CCACHE: 1
+          NINJA_ARGS: "-j2"
         run: |
           cd "$GITHUB_WORKSPACE/fox"
 
-          echo "===== BUILD START ====="
-          date
+          export USE_CCACHE=1
+          export NINJA_ARGS="-j2"
+
+          source build/envsetup.sh
+
+          lunch fox_dew-ap2a-eng
 
           echo
-          echo "===== MEMORY BEFORE BUILD ====="
+          echo "===== BUILD RESOURCES ====="
+
           free -h
-
-          echo
-          echo "===== SWAP BEFORE BUILD ====="
           swapon --show
-
-          echo
-          echo "===== DISK BEFORE BUILD ====="
-          df -h
+          df -h /
 
           echo
           echo "===== STARTING ORANGEFOX BUILD ====="
 
-          source build/envsetup.sh
-
-          lunch fox_dew-ap2a-eng
-
-          export USE_CCACHE=1
-          export NINJA_ARGS="-j2"
-
-          mka recoveryimage
+          mka recoveryimage 2>&1 | tee "$GITHUB_WORKSPACE/orangefox-build.log"
 
 
       # ============================================================
-      # 16. Buscar resultados
+      # 16. SHOW BUILD LOG IF FAILED
+      # ============================================================
+      - name: Show build logs
+        if: always()
+        run: |
+          echo "===== BUILD LOG SIZE ====="
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/orangefox-build.log" \
+            2>/dev/null || true
+
+          echo
+          echo "===== RESOURCE MONITOR LOG ====="
+
+          tail -100 \
+            "$GITHUB_WORKSPACE/resource-monitor.log" \
+            2>/dev/null || true
+
+
+      # ============================================================
+      # 17. FIND OUTPUT
       # ============================================================
       - name: Find output
         if: success()
@@ -381,7 +387,7 @@ jobs:
 
 
       # ============================================================
-      # 17. Subir imágenes
+      # 18. UPLOAD BUILD ARTIFACTS
       # ============================================================
       - name: Upload OrangeFox
         if: success()
@@ -391,3 +397,17 @@ jobs:
           path: |
             fox/out/target/product/dew/*.img
           if-no-files-found: warn
+
+
+      # ============================================================
+      # 19. UPLOAD LOGS
+      # ============================================================
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrangeFox-build-logs
+          path: |
+            orangefox-build.log
+            resource-monitor.log
+          if-no-files-found: ignore
