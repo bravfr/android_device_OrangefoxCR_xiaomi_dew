@@ -292,6 +292,51 @@ jobs:
 
           lunch fox_dew-ap2a-eng
 
+      - name: Diagnose device tree and Soong
+        run: |
+          cd "$GITHUB_WORKSPACE/fox"
+
+          echo "===== DEVICE TREE PATH ====="
+          pwd
+
+          echo
+          echo "===== DEVICE TREE ====="
+          find device/xiaomi/dew \
+            -maxdepth 2 \
+            -type f \
+            -print | sort
+
+          echo
+          echo "===== PRODUCT FILE ====="
+          cat device/xiaomi/dew/AndroidProducts.mk
+
+          echo
+          echo "===== FOX PRODUCT ====="
+          cat device/xiaomi/dew/fox_dew.mk
+
+          echo
+          echo "===== DEVICE MK ====="
+          cat device/xiaomi/dew/device.mk
+
+          echo
+          echo "===== BOARD CONFIG ====="
+          grep -E \
+            "TARGET_|BOARD_|KERNEL|DTB|VENDOR|RECOVERY" \
+            device/xiaomi/dew/BoardConfig.mk || true
+
+          echo
+          echo "===== PRODUCT SEARCH ====="
+          find device vendor -type f \
+            \( -name "AndroidProducts.mk" -o -name "*dew*.mk" \) \
+            2>/dev/null | sort
+
+          echo
+          echo "===== DISK ====="
+          df -h /
+
+          echo
+          echo "===== INODES ====="
+          df -ih /
 
       # ============================================================
       # 14. CONFIGURE BUILD ENVIRONMENT
