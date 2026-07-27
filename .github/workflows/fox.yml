@@ -77,6 +77,33 @@ jobs:
           echo "===== DISK AFTER CLEANUP ====="
           df -h /
 
+      - name: Configure 8GB swap
+        run: |
+          set -e
+
+          echo "===== CURRENT SWAP ====="
+          swapon --show || true
+
+          sudo swapoff -a || true
+
+          sudo rm -f /swapfile
+
+          sudo fallocate -l 8G /swapfile
+
+          sudo chmod 600 /swapfile
+
+          sudo mkswap /swapfile
+
+          sudo swapon /swapfile
+
+          echo
+          echo "===== FINAL SWAP ====="
+
+          free -h
+
+          echo
+          swapon --show
+
 
       # ============================================================
       # 4. VERIFY EXISTING SWAP
@@ -432,10 +459,10 @@ jobs:
           echo
           echo "===== RUNNING SOONG ====="
 
-          soong_ui.bash \
+          build/soong/soong_ui.bash \
             --make-mode \
-            nothing \
-            -j1
+            -j1 \
+            nothing
 
           echo
           echo "===== SOONG TEST FINISHED SUCCESSFULLY ====="
