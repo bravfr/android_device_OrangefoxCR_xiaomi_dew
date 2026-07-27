@@ -7,6 +7,8 @@ DEVICE_PATH := device/xiaomi/dew
 KERNEL_PATH := device/xiaomi/dew-kernel
 
 # A/B
+AB_OTA_UPDATER := true
+
 AB_OTA_PARTITIONS := \
     boot \
     init_boot \
