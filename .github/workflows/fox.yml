@@ -25,7 +25,7 @@ jobs:
 
 
       # ============================================================
-      # 2. INITIAL RESOURCES
+      # 2. INITIAL RUNNER RESOURCES
       # ============================================================
       - name: Initial runner resources
         run: |
@@ -46,7 +46,7 @@ jobs:
 
 
       # ============================================================
-      # 3. FREE MAXIMUM DISK SPACE
+      # 3. FREE RUNNER DISK SPACE
       # ============================================================
       - name: Free runner disk space
         run: |
@@ -79,11 +79,11 @@ jobs:
 
 
       # ============================================================
-      # 4. VERIFY SWAP
+      # 4. VERIFY EXISTING SWAP
       # ============================================================
       - name: Verify swap
         run: |
-          echo "===== SWAP ====="
+          echo "===== CURRENT SWAP ====="
           swapon --show
 
           echo
@@ -92,7 +92,7 @@ jobs:
 
 
       # ============================================================
-      # 5. INSTALL REQUIRED DEPENDENCIES
+      # 5. INSTALL BUILD DEPENDENCIES
       # ============================================================
       - name: Install dependencies
         run: |
@@ -122,7 +122,7 @@ jobs:
 
 
       # ============================================================
-      # 6. INSTALL REPO
+      # 6. INSTALL REPO TOOL
       # ============================================================
       - name: Install repo tool
         run: |
@@ -140,7 +140,7 @@ jobs:
 
 
       # ============================================================
-      # 7. INITIALIZE ORANGEFOX
+      # 7. INITIALIZE ORANGEFOX SOURCE
       # ============================================================
       - name: Initialize OrangeFox source
         run: |
@@ -161,14 +161,19 @@ jobs:
 
           echo
           echo "===== ORANGEFOX ROOT ====="
-          ls -la "$GITHUB_WORKSPACE/fox"
+
+          ls -la \
+            "$GITHUB_WORKSPACE/fox"
 
           echo
           echo "===== ENVSETUP ====="
-          ls -lh "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
 
           echo
           echo "===== DISK AFTER ORANGEFOX SYNC ====="
+
           df -h /
 
 
@@ -191,7 +196,7 @@ jobs:
 
 
       # ============================================================
-      # 9. CLONE PREBUILT KERNEL
+      # 9. DOWNLOAD PREBUILT KERNEL
       # ============================================================
       - name: Clone dew kernel
         run: |
@@ -248,7 +253,7 @@ jobs:
 
 
       # ============================================================
-      # 11. CLONE MEDIATEK SEPOLICY
+      # 11. DOWNLOAD MEDIATEK SEPOLICY
       # ============================================================
       - name: Clone MediaTek sepolicy
         run: |
@@ -360,64 +365,80 @@ jobs:
           df -h /
 
           echo
+          echo "===== INODES ====="
+          df -ih /
+
+          echo
           echo "===== DEVICE TREE ====="
+
           ls -la \
             "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
 
           echo
           echo "===== KERNEL ====="
+
           ls -lh \
             "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
 
           echo
           echo "===== DTB ====="
+
           ls -lh \
             "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
 
           echo
           echo "===== BUILD VARIABLES ====="
+
           echo "USE_CCACHE=$USE_CCACHE"
           echo "NINJA_ARGS=$NINJA_ARGS"
 
 
       # ============================================================
-      # 15. START RESOURCE MONITOR
+      # 15. ISOLATED SOONG TEST
       # ============================================================
-      - name: Start resource monitor
+      - name: Test Soong bootstrap
+        timeout-minutes: 30
         run: |
-          (
-            while true
-            do
-              echo
-              echo "============================================================"
-              echo "===== RESOURCE MONITOR $(date) ====="
-              echo "============================================================"
+          set -e
 
-              echo
-              echo "===== MEMORY ====="
-              free -h
+          cd "$GITHUB_WORKSPACE/fox"
 
-              echo
-              echo "===== SWAP ====="
-              swapon --show
+          echo "===== STARTING ISOLATED SOONG TEST ====="
 
-              echo
-              echo "===== DISK ====="
-              df -h /
+          date
 
-              echo
-              echo "===== TOP MEMORY PROCESSES ====="
-              ps aux --sort=-%mem | head -15
+          echo
+          echo "===== MEMORY ====="
 
-              echo
-              echo "===== LOAD ====="
-              uptime
+          free -h
 
-              sleep 30
-            done
-          ) > "$GITHUB_WORKSPACE/resource-monitor.log" 2>&1 &
+          echo
+          echo "===== SWAP ====="
 
-          echo $! > "$GITHUB_WORKSPACE/resource-monitor.pid"
+          swapon --show
+
+          echo
+          echo "===== DISK ====="
+
+          df -h /
+
+          echo
+          echo "===== SOONG TEST ====="
+
+          source build/envsetup.sh
+
+          lunch fox_dew-ap2a-eng
+
+          echo
+          echo "===== RUNNING SOONG ====="
+
+          soong_ui.bash \
+            --make-mode \
+            nothing \
+            -j1
+
+          echo
+          echo "===== SOONG TEST FINISHED SUCCESSFULLY ====="
 
 
       # ============================================================
@@ -468,18 +489,7 @@ jobs:
 
 
       # ============================================================
-      # 17. STOP RESOURCE MONITOR
-      # ============================================================
-      - name: Stop resource monitor
-        if: always()
-        run: |
-          if [ -f "$GITHUB_WORKSPACE/resource-monitor.pid" ]; then
-            kill "$(cat "$GITHUB_WORKSPACE/resource-monitor.pid")" || true
-          fi
-
-
-      # ============================================================
-      # 18. FINAL RESOURCE REPORT
+      # 17. FINAL RESOURCE REPORT
       # ============================================================
       - name: Final resource report
         if: always()
@@ -499,16 +509,13 @@ jobs:
           df -h /
 
           echo
-          echo "===== RESOURCE MONITOR LOG ====="
+          echo "===== FINAL INODES ====="
 
-          if [ -f "$GITHUB_WORKSPACE/resource-monitor.log" ]; then
-            tail -200 \
-              "$GITHUB_WORKSPACE/resource-monitor.log"
-          fi
+          df -ih /
 
 
       # ============================================================
-      # 19. FIND OUTPUT
+      # 18. FIND OUTPUT
       # ============================================================
       - name: Find output
         if: always()
@@ -531,19 +538,7 @@ jobs:
 
 
       # ============================================================
-      # 20. UPLOAD RESOURCE LOG
-      # ============================================================
-      - name: Upload resource monitor
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: OrangeFox-resource-monitor
-          path: resource-monitor.log
-          if-no-files-found: warn
-
-
-      # ============================================================
-      # 21. UPLOAD ORANGEFOX OUTPUT
+      # 19. UPLOAD ORANGEFOX OUTPUT
       # ============================================================
       - name: Upload OrangeFox
         if: success()
