@@ -11,12 +11,27 @@ jobs:
     env:
       USE_CCACHE: 0
       NINJA_ARGS: "-j1"
-      BUILD_NUMBER: "1"
 
     steps:
 
       # ============================================================
-      # 1. CHECKOUT DEVICE TREE
+      # 1. MAXIMIZE BUILD DISK SPACE
+      # ============================================================
+      - name: Maximize build disk space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 10240
+          temp-reserve-mb: 2048
+          swap-size-mb: 8192
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+
+
+      # ============================================================
+      # 2. CHECKOUT DEVICE TREE
       # ============================================================
       - name: Checkout device tree
         uses: actions/checkout@v4
@@ -25,9 +40,9 @@ jobs:
 
 
       # ============================================================
-      # 2. INITIAL RUNNER RESOURCES
+      # 3. CHECK RESOURCES
       # ============================================================
-      - name: Initial runner resources
+      - name: Check runner resources
         run: |
           echo "===== CPU ====="
           nproc
@@ -38,88 +53,19 @@ jobs:
 
           echo
           echo "===== SWAP ====="
-          swapon --show || true
+          swapon --show
 
           echo
           echo "===== DISK ====="
           df -h /
 
-
-      # ============================================================
-      # 3. FREE RUNNER DISK SPACE
-      # ============================================================
-      - name: Free runner disk space
-        run: |
-          set -e
-
-          echo "===== DISK BEFORE CLEANUP ====="
-          df -h /
-
           echo
-          echo "===== REMOVING LARGE UNUSED COMPONENTS ====="
-
-          sudo rm -rf /usr/local/lib/android/sdk/ndk || true
-          sudo rm -rf /usr/local/lib/android/sdk/cmake || true
-          sudo rm -rf /usr/local/lib/android/sdk/emulator || true
-          sudo rm -rf /usr/local/lib/android/sdk/system-images || true
-
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/share/boost || true
-          sudo rm -rf /usr/local/lib/node_modules || true
-          sudo rm -rf /usr/local/share/powershell || true
-          sudo rm -rf /usr/local/share/chromium || true
-
-          sudo apt-get clean || true
-          sudo rm -rf /var/lib/apt/lists/* || true
-
-          echo
-          echo "===== DISK AFTER CLEANUP ====="
-          df -h /
-
-      - name: Configure 8GB swap
-        run: |
-          set -e
-
-          echo "===== CURRENT SWAP ====="
-          swapon --show || true
-
-          sudo swapoff -a || true
-
-          sudo rm -f /swapfile
-
-          sudo fallocate -l 8G /swapfile
-
-          sudo chmod 600 /swapfile
-
-          sudo mkswap /swapfile
-
-          sudo swapon /swapfile
-
-          echo
-          echo "===== FINAL SWAP ====="
-
-          free -h
-
-          echo
-          swapon --show
+          echo "===== INODES ====="
+          df -ih /
 
 
       # ============================================================
-      # 4. VERIFY EXISTING SWAP
-      # ============================================================
-      - name: Verify swap
-        run: |
-          echo "===== CURRENT SWAP ====="
-          swapon --show
-
-          echo
-          echo "===== MEMORY ====="
-          free -h
-
-
-      # ============================================================
-      # 5. INSTALL BUILD DEPENDENCIES
+      # 4. INSTALL DEPENDENCIES
       # ============================================================
       - name: Install dependencies
         run: |
@@ -149,7 +95,7 @@ jobs:
 
 
       # ============================================================
-      # 6. INSTALL REPO TOOL
+      # 5. INSTALL REPO TOOL
       # ============================================================
       - name: Install repo tool
         run: |
@@ -167,7 +113,7 @@ jobs:
 
 
       # ============================================================
-      # 7. INITIALIZE ORANGEFOX SOURCE
+      # 6. INITIALIZE ORANGEFOX
       # ============================================================
       - name: Initialize OrangeFox source
         run: |
@@ -189,14 +135,7 @@ jobs:
           echo
           echo "===== ORANGEFOX ROOT ====="
 
-          ls -la \
-            "$GITHUB_WORKSPACE/fox"
-
-          echo
-          echo "===== ENVSETUP ====="
-
-          ls -lh \
-            "$GITHUB_WORKSPACE/fox/build/envsetup.sh"
+          ls -la "$GITHUB_WORKSPACE/fox"
 
           echo
           echo "===== DISK AFTER ORANGEFOX SYNC ====="
@@ -205,7 +144,7 @@ jobs:
 
 
       # ============================================================
-      # 8. COPY DEVICE TREE
+      # 7. COPY DEVICE TREE
       # ============================================================
       - name: Add device tree
         run: |
@@ -223,7 +162,7 @@ jobs:
 
 
       # ============================================================
-      # 9. DOWNLOAD PREBUILT KERNEL
+      # 8. DOWNLOAD PREBUILT KERNEL
       # ============================================================
       - name: Clone dew kernel
         run: |
@@ -237,7 +176,7 @@ jobs:
 
 
       # ============================================================
-      # 10. VERIFY KERNEL
+      # 9. VERIFY KERNEL
       # ============================================================
       - name: Verify kernel
         run: |
@@ -280,7 +219,7 @@ jobs:
 
 
       # ============================================================
-      # 11. DOWNLOAD MEDIATEK SEPOLICY
+      # 10. DOWNLOAD MEDIATEK SEPOLICY
       # ============================================================
       - name: Clone MediaTek sepolicy
         run: |
@@ -294,7 +233,7 @@ jobs:
 
 
       # ============================================================
-      # 12. VERIFY DEVICE TREE
+      # 11. VERIFY DEVICE TREE
       # ============================================================
       - name: Verify device tree
         run: |
@@ -335,19 +274,9 @@ jobs:
             "TARGET_|BOARD_|KERNEL|DTB|VENDOR|RECOVERY" \
             device/xiaomi/dew/BoardConfig.mk || true
 
-          echo
-          echo "===== DISK ====="
-
-          df -h /
-
-          echo
-          echo "===== INODES ====="
-
-          df -ih /
-
 
       # ============================================================
-      # 13. PREPARE BUILD
+      # 12. PREPARE BUILD
       # ============================================================
       - name: Prepare build
         run: |
@@ -369,9 +298,9 @@ jobs:
 
 
       # ============================================================
-      # 14. FINAL RESOURCE CHECK
+      # 13. FINAL PRE-BUILD CHECK
       # ============================================================
-      - name: Final resource check
+      - name: Final pre-build resources
         run: |
           echo "===== FINAL PRE-BUILD CHECK ====="
 
@@ -396,24 +325,6 @@ jobs:
           df -ih /
 
           echo
-          echo "===== DEVICE TREE ====="
-
-          ls -la \
-            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew"
-
-          echo
-          echo "===== KERNEL ====="
-
-          ls -lh \
-            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/kernel"
-
-          echo
-          echo "===== DTB ====="
-
-          ls -lh \
-            "$GITHUB_WORKSPACE/fox/device/xiaomi/dew-kernel/images/dtb/mt6768.dtb"
-
-          echo
           echo "===== BUILD VARIABLES ====="
 
           echo "USE_CCACHE=$USE_CCACHE"
@@ -421,7 +332,58 @@ jobs:
 
 
       # ============================================================
-      # 15. ISOLATED SOONG TEST
+      # 14. RUNNER SURVIVAL TEST
+      # ============================================================
+      - name: Runner survival test
+        run: |
+          set -e
+
+          echo "===== RUNNER SURVIVAL TEST ====="
+
+          date
+
+          echo
+          echo "===== MEMORY ====="
+          free -h
+
+          echo
+          echo "===== SWAP ====="
+          swapon --show
+
+          echo
+          echo "===== DISK ====="
+          df -h /
+
+          echo
+          echo "===== TEST FILE ====="
+
+          dd if=/dev/zero \
+            of="$GITHUB_WORKSPACE/test-1gb.bin" \
+            bs=1M \
+            count=1024 \
+            status=progress
+
+          sync
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/test-1gb.bin"
+
+          rm -f \
+            "$GITHUB_WORKSPACE/test-1gb.bin"
+
+          echo
+          echo "===== RUNNER SURVIVAL TEST PASSED ====="
+
+          sleep 30
+
+          echo
+          echo "===== RUNNER STILL ALIVE ====="
+
+          date
+
+
+      # ============================================================
+      # 15. TEST SOONG BOOTSTRAP
       # ============================================================
       - name: Test Soong bootstrap
         timeout-minutes: 30
@@ -436,28 +398,22 @@ jobs:
 
           echo
           echo "===== MEMORY ====="
-
           free -h
 
           echo
           echo "===== SWAP ====="
-
           swapon --show
 
           echo
           echo "===== DISK ====="
-
           df -h /
 
           echo
-          echo "===== SOONG TEST ====="
+          echo "===== RUNNING SOONG ====="
 
           source build/envsetup.sh
 
           lunch fox_dew-ap2a-eng
-
-          echo
-          echo "===== RUNNING SOONG ====="
 
           build/soong/soong_ui.bash \
             --make-mode \
@@ -522,22 +478,18 @@ jobs:
         if: always()
         run: |
           echo "===== FINAL MEMORY ====="
-
           free -h
 
           echo
           echo "===== FINAL SWAP ====="
-
           swapon --show
 
           echo
           echo "===== FINAL DISK ====="
-
           df -h /
 
           echo
           echo "===== FINAL INODES ====="
-
           df -ih /
 
 
@@ -565,7 +517,7 @@ jobs:
 
 
       # ============================================================
-      # 19. UPLOAD ORANGEFOX OUTPUT
+      # 19. UPLOAD ORANGEFOX
       # ============================================================
       - name: Upload OrangeFox
         if: success()
