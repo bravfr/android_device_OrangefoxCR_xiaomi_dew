@@ -20,9 +20,9 @@ jobs:
       - name: Maximize build disk space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 10240
-          temp-reserve-mb: 2048
-          swap-size-mb: 8192
+          root-reserve-mb: 2048
+          temp-reserve-mb: 1024
+          swap-size-mb: 4096
           remove-dotnet: "true"
           remove-android: "true"
           remove-haskell: "true"
@@ -329,57 +329,6 @@ jobs:
 
           echo "USE_CCACHE=$USE_CCACHE"
           echo "NINJA_ARGS=$NINJA_ARGS"
-
-
-      # ============================================================
-      # 14. RUNNER SURVIVAL TEST
-      # ============================================================
-      - name: Runner survival test
-        run: |
-          set -e
-
-          echo "===== RUNNER SURVIVAL TEST ====="
-
-          date
-
-          echo
-          echo "===== MEMORY ====="
-          free -h
-
-          echo
-          echo "===== SWAP ====="
-          swapon --show
-
-          echo
-          echo "===== DISK ====="
-          df -h /
-
-          echo
-          echo "===== TEST FILE ====="
-
-          dd if=/dev/zero \
-            of="$GITHUB_WORKSPACE/test-1gb.bin" \
-            bs=1M \
-            count=1024 \
-            status=progress
-
-          sync
-
-          ls -lh \
-            "$GITHUB_WORKSPACE/test-1gb.bin"
-
-          rm -f \
-            "$GITHUB_WORKSPACE/test-1gb.bin"
-
-          echo
-          echo "===== RUNNER SURVIVAL TEST PASSED ====="
-
-          sleep 30
-
-          echo
-          echo "===== RUNNER STILL ALIVE ====="
-
-          date
 
 
       # ============================================================
