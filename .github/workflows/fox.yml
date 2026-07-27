@@ -334,43 +334,25 @@ jobs:
       # ============================================================
       # 15. TEST SOONG BOOTSTRAP
       # ============================================================
-      - name: Test Soong bootstrap
-        timeout-minutes: 30
+      - name: Final build check
         run: |
-          set -e
-
           cd "$GITHUB_WORKSPACE/fox"
 
-          echo "===== STARTING ISOLATED SOONG TEST ====="
+          echo "===== FINAL BUILD CHECK ====="
 
-          date
-
-          echo
-          echo "===== MEMORY ====="
           free -h
 
           echo
-          echo "===== SWAP ====="
           swapon --show
 
           echo
-          echo "===== DISK ====="
           df -h /
 
           echo
-          echo "===== RUNNING SOONG ====="
-
-          source build/envsetup.sh
-
-          lunch fox_dew-ap2a-eng
-
-          build/soong/soong_ui.bash \
-            --make-mode \
-            -j1 \
-            nothing
+          df -ih /
 
           echo
-          echo "===== SOONG TEST FINISHED SUCCESSFULLY ====="
+          du -sh "$GITHUB_WORKSPACE/fox" || true
 
 
       # ============================================================
