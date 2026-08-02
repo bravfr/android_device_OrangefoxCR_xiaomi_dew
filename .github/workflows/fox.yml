@@ -399,7 +399,7 @@ jobs:
           echo
           echo "===== STARTING RECOVERYIMAGE ====="
 
-          mka vendorbootimage -j1
+          mka vendorbootimage
 
 
       # ============================================================
