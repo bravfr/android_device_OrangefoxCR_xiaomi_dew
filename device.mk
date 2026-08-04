@@ -103,3 +103,6 @@ PRODUCT_PACKAGES += \
 
 # Inherit the proprietary files
 $(call inherit-product, vendor/xiaomi/dew/dew-vendor.mk)
+
+PRODUCT_PACKAGES += \
+    recovery_ramdisk
