@@ -1,10 +1,8 @@
-# OrangeFox device configuration
+# OrangeFox product
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-
-# Inherit device configuration
 $(call inherit-product, device/xiaomi/dew/device.mk)
+
+$(call inherit-product, vendor/orangefox/config/common.mk)
 
 PRODUCT_DEVICE := dew
 PRODUCT_NAME := fox_dew
