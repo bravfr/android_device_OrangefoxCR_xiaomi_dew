@@ -2,7 +2,7 @@
 
 $(call inherit-product, device/xiaomi/dew/device.mk)
 
-$(call inherit-product, vendor/orangefox/config/common.mk)
+$(call inherit-product, vendor/twrp/config/common.mk)
 
 PRODUCT_DEVICE := dew
 PRODUCT_NAME := fox_dew
