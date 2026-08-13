@@ -219,3 +219,6 @@ TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_FBE := true
 TW_INCLUDE_FBE_METADATA := true
 FOX_VIRTUAL_AB_DEVICE := 1
+
+# OrangeFox vendor_boot recovery
+FOX_VENDOR_BOOT_RECOVERY := 1
